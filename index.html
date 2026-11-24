@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hémosuivi">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121011" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Hémosuivi</title>
+<style>
+/* VOICE  clinique, calme, lisible d'un coup d'œil
+   IDEA   un carnet de suivi : la feuille de résultats du labo, annotée des saignées
+   PICTURE la courbe de ferritine, les saignées en gouttes rouges sur l'axe du temps
+   COLOUR blanc / encre / rouge sang, bleu ardoise pour la zone cible
+   TYPE   police système (SF Pro), chiffres tabulaires ; LAYOUT une colonne, onglets en bas */
+:root{--bg:#fff;--card:#f5f2f3;--ink:#1b1517;--mut:#6f6467;--line:#e6e0e2;--acc:#b3122e;--acc2:#8c1d33;--band:rgba(46,111,142,.15);--bandl:#2e6f8e;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:#121011;--card:#1e1a1c;--ink:#f3eeef;--mut:#a89da0;--line:#302a2c;--acc:#ff4d6a;--acc2:#ff8a9d;--band:rgba(110,180,210,.17);--bandl:#86c0da}}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;overflow-x:clip;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);-webkit-tap-highlight-color:transparent}
+.top,main{max-width:720px;margin:0 auto}
+.top{padding:16px 18px 8px}
+h1{font-size:34px;line-height:1.05;margin:0;letter-spacing:-.02em}
+main{padding:0 18px calc(100px + env(safe-area-inset-bottom))}
+h2{font-size:20px;margin:30px 0 10px}
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:10px 16px;flex-wrap:wrap;margin:18px 0 4px}
+.big{font-size:clamp(46px,14vw,64px);font-weight:700;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.unit{font-size:18px;color:var(--mut);font-weight:500}
+.meta{color:var(--mut);font-size:14px;margin-bottom:4px}
+.hmeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:14px;color:var(--mut)}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:13px;font-weight:600;white-space:nowrap}
+.pill.haut{background:var(--acc);color:#fff}.pill.ok{background:var(--band);color:var(--bandl)}.pill.bas{background:#f0c75e;color:#1b1517}
+.seg{display:flex;gap:4px;background:var(--card);padding:4px;border-radius:12px;overflow-x:auto;scrollbar-width:none}
+.seg button{flex:1 0 auto;border:0;background:none;color:var(--ink);font:inherit;font-size:14px;padding:8px 12px;border-radius:9px;min-height:38px;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.14);font-weight:600}
+.fig{position:relative;height:clamp(240px,42vh,340px);margin:10px 0 8px}
+.fig svg{position:absolute;inset:0;width:100%;height:100%;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.cap{min-height:22px;font-size:14px;color:var(--mut);margin-top:8px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.card{background:var(--card);border-radius:16px;padding:14px;display:grid;gap:2px;align-content:start}
+.card b{font-size:20px;line-height:1.2;font-variant-numeric:tabular-nums}
+.card span{font-size:13px;color:var(--mut)}
+.btn{appearance:none;-webkit-appearance:none;border:0;border-radius:14px;min-height:50px;font-family:inherit;font-weight:600;font-size:16px;padding:0 16px;background:var(--card);color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center}
+.btn.p{background:var(--acc);color:#fff}.btn.k{background:var(--ink);color:var(--bg)}.btn.d{color:var(--acc)}
+.btn svg{width:20px;height:20px}
+.lnk{border:0;background:none;color:var(--acc);font:inherit;font-weight:600;padding:6px 0;cursor:pointer}
+.btn:focus-visible,.seg button:focus-visible,.tabs button:focus-visible,.lnk:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.list li:focus-visible{outline:2px solid var(--bandl);outline-offset:2px}
+.list{list-style:none;margin:8px 0 0;padding:0}
+.list li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.list li.yr{display:block;cursor:default;font-size:13px;color:var(--mut);font-weight:600;padding:22px 2px 6px}
+.ico{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--card)}
+.ico svg{width:19px;height:19px}
+.lt{font-weight:600}.ls{font-size:13px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lv{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.lv small{color:var(--mut);font-weight:500}
+.empty{text-align:center;color:var(--mut);padding:36px 10px;display:grid;gap:14px;justify-items:center}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;background:var(--bg);background:color-mix(in srgb,var(--bg) 86%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px env(safe-area-inset-right) calc(4px + env(safe-area-inset-bottom)) env(safe-area-inset-left);z-index:5}
+.tabs button{flex:1;max-width:170px;border:0;background:none;color:var(--mut);font:inherit;font-size:11px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:48px;cursor:pointer}
+.tabs svg{width:25px;height:25px}
+.tabs button[aria-current=page]{color:var(--acc)}
+dialog{border:0;padding:0;width:100%;max-width:560px;max-height:92vh;border-radius:22px 22px 0 0;margin:auto auto 0;background:var(--bg);color:var(--ink);overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.42)}
+form.f{padding:20px 18px calc(18px + env(safe-area-inset-bottom));display:grid;gap:12px}
+.f h3{margin:0 0 2px;font-size:22px}
+label{display:grid;gap:4px;font-size:14px;color:var(--mut)}
+label.btn{display:flex;color:var(--ink);font-size:16px}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;min-height:46px;width:100%;-webkit-appearance:none;appearance:none}
+input[type=date]{display:block}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--mut) 50%),linear-gradient(135deg,var(--mut) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+textarea{min-height:64px;resize:vertical}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.fa{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap}.fa .btn{flex:1 1 30%}
+.set{display:grid;gap:10px}
+.typ{background:var(--card);border-radius:16px;padding:12px;display:grid;gap:10px}
+.typ input{background:var(--bg)}
+.typ .btn{min-height:40px;background:var(--bg)}
+.note{font-size:13px;color:var(--mut);margin:8px 0}
+.bkc{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;border:1px solid var(--line)}
+.bkc>div{display:grid;gap:2px}.bkc b{font-size:17px}.bkc .btn{min-height:44px;flex:none}
+#toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9;max-width:90vw;text-align:center}
+#toast.on{opacity:1}
+#rapport{display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media print{
+  :root{--bg:#fff;--card:#f3f3f3;--ink:#000;--mut:#555;--line:#ccc;--acc:#b3122e;--acc2:#8c1d33;--band:rgba(46,111,142,.15)}
+  body{padding:0;background:#fff}
+  body>*:not(#rapport){display:none!important}
+  #rapport{display:block;color:#000;font:10.5pt/1.4 -apple-system,Helvetica,Arial,sans-serif}
+  #rapport h1{font-size:20pt;margin:0 0 4pt}#rapport h2{font-size:13pt;margin:18pt 0 6pt}
+  #rapport svg{width:100%;height:auto;break-inside:avoid}
+  #rapport table{width:100%;border-collapse:collapse}#rapport td,#rapport th{border-bottom:1px solid #ccc;padding:3pt 4pt;text-align:left}
+  #rapport tr{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<header class="top"><h1 id="titre">Suivi</h1></header>
+<main>
+  <section id="v-suivi" class="vue">
+    <div class="seg" id="types" role="group" aria-label="Analyse affichée"></div>
+    <div class="hero" id="hero"></div>
+    <div class="fig"><svg id="chart" role="img" aria-label="Courbe des dosages et saignées"></svg></div>
+    <div class="seg" id="pers" role="group" aria-label="Période">
+      <button type="button" data-p="182">6 mois</button><button type="button" data-p="365">1 an</button><button type="button" data-p="730">2 ans</button><button type="button" data-p="0">Tout</button>
+    </div>
+    <div class="cap" id="cap" aria-live="polite"></div>
+    <div class="actions">
+      <button type="button" class="btn k" id="addD">+ Dosage</button>
+      <button type="button" class="btn p" id="addS">+ Saignée</button>
+    </div>
+    <div class="grid" id="cards"></div>
+    <div id="bk"></div>
+    <div id="demo"></div>
+  </section>
+
+  <section id="v-histo" class="vue" hidden>
+    <div class="seg" id="hf" role="group" aria-label="Filtre">
+      <button type="button" data-f="all">Tout</button><button type="button" data-f="d">Dosages</button><button type="button" data-f="s">Saignées</button>
+    </div>
+    <ul class="list" id="hlist"></ul>
+  </section>
+
+  <section id="v-regl" class="vue" hidden>
+    <h2>Analyses suivies</h2>
+    <div class="set" id="typs"></div>
+    <div class="set" style="margin-top:10px"><button type="button" class="btn" id="addT">Ajouter une analyse</button></div>
+    <p class="note">Les cibles sont celles fixées par ton médecin. Elles servent seulement à tracer la zone cible et à situer la dernière valeur.</p>
+
+    <h2>Saignées</h2>
+    <div class="row">
+      <label>Intervalle visé (jours)<input id="int" inputmode="numeric"></label>
+      <label>Volume par défaut (mL)<input id="vol" inputmode="numeric"></label>
+    </div>
+    <div class="set" style="margin-top:10px"><button type="button" class="btn" id="ics">Ajouter la prochaine saignée au Calendrier</button></div>
+
+    <h2>Sauvegarde iCloud</h2>
+    <p class="note" id="bkinfo"></p>
+    <div class="set">
+      <button type="button" class="btn k" id="json"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9a4 4 0 0 1 0 9M12 12v8M9 15l3-3 3 3"/></svg>Sauvegarder dans iCloud Drive</button>
+      <label class="btn">Restaurer depuis iCloud Drive<input type="file" id="imp" accept=".json,application/json" hidden></label>
+      <label>Me rappeler de sauvegarder<select id="rappel"><option value="7">Toutes les semaines</option><option value="14">Toutes les 2 semaines</option><option value="30">Tous les mois</option><option value="0">Jamais</option></select></label>
+    </div>
+    <p class="note">Dans le menu qui s'ouvre, choisis « Enregistrer dans Fichiers », puis iCloud Drive (par exemple un dossier « Hémosuivi »). Chaque sauvegarde est un fichier daté : tu peux revenir à n'importe quelle version.</p>
+
+    <h2>Exports</h2>
+    <div class="set">
+      <button type="button" class="btn" id="csv">Exporter en CSV</button>
+      <button type="button" class="btn" id="pdf">Rapport imprimable / PDF</button>
+      <button type="button" class="btn d" id="wipe">Tout effacer</button>
+    </div>
+    <p class="note" id="info"></p>
+    <p class="note" id="install"></p>
+  </section>
+</main>
+
+<nav class="tabs" aria-label="Navigation">
+  <button type="button" data-v="suivi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Suivi</button>
+  <button type="button" data-v="historique"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Historique</button>
+  <button type="button" data-v="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="18" cy="18" r="2.2"/></svg>Réglages</button>
+</nav>
+
+<dialog id="dlg"><form class="f" id="frm" autocomplete="off"></form></dialog>
+<div id="rapport"></div>
+<div id="toast" role="status"></div>
+
+<script>
+{
+const KEY='hemosuivi.v1';
+const DEF={dosages:[],saignees:[],settings:{types:[
+  {id:'ferr',nom:'Ferritine',unite:'µg/L',bas:'',haut:''},
+  {id:'cst',nom:'CST',unite:'%',bas:'',haut:''},
+  {id:'hb',nom:'Hémoglobine',unite:'g/dL',bas:'',haut:''}],intervalle:56,volume:400,rappel:14}};
+const KINDS={efs:'Don de sang (EFS)',ther:'Saignée thérapeutique',autre:'Autre prélèvement'};
+const DROP='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5C9 7 6 10.4 6 14a6 6 0 0 0 12 0c0-3.6-3-7-6-11.5z"/></svg>';
+const TUBE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3h8M10 3v13.5a2 2 0 0 0 4 0V3M10 11h4"/></svg>';
+const DROPD='M0-20C-4-14-8-9-8-5a8 8 0 0 0 16 0c0-4-4-9-8-15z';
+
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const today=()=>iso(new Date());
+const pd=s=>{const[a,b,c]=String(s).split('-').map(Number);return new Date(a,b-1,c)};
+const fd=s=>pd(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+const days=(a,b)=>Math.round((pd(b)-pd(a))/864e5);
+const addDays=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return iso(d)};
+const num=v=>{if(v===''||v==null)return null;const n=parseFloat(String(v).replace(',','.'));return isFinite(n)?n:null};
+const fn=n=>n==null?'—':Number(n).toLocaleString('fr-FR',{maximumFractionDigits:2});
+const byDate=(a,b)=>a.date.localeCompare(b.date);
+const isDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(s);
+const ago=k=>k<=0?"aujourd'hui":k===1?'hier':`il y a ${k} j`;
+
+let S,memOnly=false,persisted=false;
+const cur={type:'ferr',per:365,hf:'all'};
+
+function normalize(o){
+  const s={dosages:[],saignees:[],settings:clone(DEF.settings),meta:{lastBackup:null,modif:null}};
+  if(o&&o.meta){s.meta.lastBackup=typeof o.meta.lastBackup==='string'?o.meta.lastBackup:null;s.meta.modif=typeof o.meta.modif==='string'?o.meta.modif:null}
+  if(o&&o.settings&&num(o.settings.rappel)!=null&&num(o.settings.rappel)>=0)s.settings.rappel=Math.round(num(o.settings.rappel));
+  if(o&&o.settings){
+    if(Array.isArray(o.settings.types)&&o.settings.types.length)s.settings.types=o.settings.types.filter(t=>t&&t.id).map(t=>({id:String(t.id),nom:String(t.nom||t.id),unite:String(t.unite||''),bas:t.bas??'',haut:t.haut??''}));
+    if(num(o.settings.intervalle)>0)s.settings.intervalle=Math.round(num(o.settings.intervalle));
+    if(num(o.settings.volume)>0)s.settings.volume=Math.round(num(o.settings.volume));
+  }
+  for(const d of (o&&o.dosages)||[])if(d&&isDate(d.date)&&num(d.val)!=null&&d.type)s.dosages.push({id:String(d.id||uid()),date:d.date,type:String(d.type),val:num(d.val),lab:String(d.lab||''),note:String(d.note||''),...(d.demo?{demo:true}:{})});
+  for(const g of (o&&o.saignees)||[])if(g&&isDate(g.date))s.saignees.push({id:String(g.id||uid()),date:g.date,kind:KINDS[g.kind]?g.kind:'autre',vol:num(g.vol),lieu:String(g.lieu||''),hb:num(g.hb),note:String(g.note||''),...(g.demo?{demo:true}:{})});
+  return s;
+}
+function load(){let o=null;try{const t=localStorage.getItem(KEY);if(t)o=JSON.parse(t)}catch(e){}S=normalize(o)}
+function save(mark=true){
+  if(mark)S.meta.modif=new Date().toISOString();
+  try{localStorage.setItem(KEY,JSON.stringify(S))}
+  catch(e){if(!memOnly){memOnly=true;toast('Stockage indisponible : les données ne seront pas conservées')}}
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2400)}
+const typ=id=>S.settings.types.find(t=>t.id===id)||{id,nom:id,unite:'',bas:'',haut:''};
+
+function statut(v,t){
+  const b=num(t.bas),h=num(t.haut);if(b==null&&h==null)return null;
+  if(h!=null&&v>h)return['haut','Au-dessus de la cible'];
+  if(b!=null&&v<b)return['bas','Sous la cible'];
+  return['ok','Dans la cible'];
+}
+function nice(x){const p=10**Math.floor(Math.log10(x)),f=x/p;return(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p}
+
+/* ---------- Courbe ---------- */
+function chart(W,H,tid,per,interactive){
+  const t=typ(tid),T=today();
+  const all=S.dosages.filter(d=>d.type===tid).sort(byDate);
+  let start;
+  if(per)start=addDays(T,-per);
+  else{const ds=[...all.map(d=>d.date),...S.saignees.map(s=>s.date)].sort();start=ds.length?addDays(ds[0],-10):addDays(T,-365)}
+  const end=[T,...all.map(d=>d.date),...S.saignees.map(s=>s.date)].sort().pop();
+  const pts=all.filter(d=>d.date>=start),sg=S.saignees.filter(s=>s.date>=start).sort(byDate);
+  if(!pts.length&&!sg.length)return{svg:`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="var(--mut)" font-size="14">Aucune donnée sur cette période</text>`,pts:[],sg:[]};
+  const narrow=W<420,m={l:narrow?38:48,r:14,t:14,b:30};
+  const x0=pd(start).getTime(),x1=pd(end).getTime()+864e5*5;
+  const bas=num(t.bas),haut=num(t.haut);
+  let top=Math.max(1,haut??0,bas??0,...pts.map(p=>p.val));
+  const step=nice(top/4);top=Math.ceil(top*1.08/step)*step;
+  const X=ts=>m.l+(ts-x0)/(x1-x0)*(W-m.l-m.r),Y=v=>H-m.b-v/top*(H-m.t-m.b);
+  let g='';
+  if(bas!=null||haut!=null){const yh=Y(Math.min(haut??top,top)),yb=Y(bas??0);g+=`<rect x="${m.l}" y="${yh.toFixed(1)}" width="${W-m.l-m.r}" height="${Math.max(0,yb-yh).toFixed(1)}" fill="var(--band)"/>`}
+  for(let i=0;i*step<=top+1e-9;i++){const v=i*step,y=Y(v);g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)"/><text x="${m.l-7}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--mut)">${fn(v)}</text>`}
+  const months=(x1-x0)/(30.44*864e5),maxT=Math.max(2,Math.floor((W-m.l-m.r)/(narrow?54:70)));
+  const sm=[1,2,3,6,12,24,60].find(s=>months/s<=maxT)||60;
+  const d=pd(start);d.setDate(1);d.setMonth(d.getMonth()+1);
+  while((d.getFullYear()*12+d.getMonth())%sm)d.setMonth(d.getMonth()+1);
+  for(;d.getTime()<=x1;d.setMonth(d.getMonth()+sm)){
+    const x=X(d.getTime());if(x<m.l||x>W-m.r)continue;
+    const lab=(sm>=12||d.getMonth()===0)?String(d.getFullYear()):d.toLocaleDateString('fr-FR',{month:'short'}).replace('.','');
+    g+=`<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${H-m.b}" y2="${H-m.b+4}" stroke="var(--mut)"/><text x="${x.toFixed(1)}" y="${H-m.b+18}" text-anchor="middle" font-size="11" fill="var(--mut)">${lab}</text>`;
+  }
+  const SG=sg.map(s=>({x:X(pd(s.date).getTime()),s}));
+  for(const q of SG)g+=`<line x1="${q.x.toFixed(1)}" x2="${q.x.toFixed(1)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--acc)" stroke-opacity=".28" stroke-dasharray="3 4"/>`;
+  g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${H-m.b}" y2="${H-m.b}" stroke="var(--mut)" stroke-opacity=".6"/>`;
+  for(const q of SG)g+=`<path transform="translate(${q.x.toFixed(1)},${H-m.b-3}) scale(.5)" d="${DROPD}" fill="var(--acc)"/>`;
+  const P=pts.map(p=>({x:X(pd(p.date).getTime()),y:Y(p.val),p}));
+  if(P.length>1)g+=`<path d="${P.map((q,i)=>(i?'L':'M')+q.x.toFixed(1)+' '+q.y.toFixed(1)).join('')}" fill="none" stroke="var(--acc2)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  P.forEach((q,i)=>{const l=i===P.length-1;g+=`<circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="${l?5.5:3.5}" fill="${l?'var(--acc2)':'var(--bg)'}" stroke="var(--acc2)" stroke-width="2"/>`});
+  if(interactive)g+=`<g id="hl" style="display:none"><line id="hlL" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink)" stroke-opacity=".35"/><circle id="hlC" r="8" fill="none" stroke="var(--ink)" stroke-width="2"/></g>`;
+  return{svg:g,pts:P,sg:SG};
+}
+const svg=$('#chart');let CH={pts:[],sg:[]};
+function legend(){const t=typ(cur.type);return(num(t.bas)!=null||num(t.haut)!=null?'Gouttes : saignées · bande bleue : zone cible':'Gouttes : saignées')+' · touche la courbe pour lire une valeur'}
+function draw(){
+  const W=svg.clientWidth,H=svg.clientHeight;if(!W||!H)return;
+  CH=chart(W,H,cur.type,cur.per,true);svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.innerHTML=CH.svg;$('#cap').textContent=legend();
+}
+function pick(e){
+  const r=svg.getBoundingClientRect(),x=e.clientX-r.left;let best=null,bd=30;
+  for(const q of CH.pts){const d=Math.abs(q.x-x);if(d<bd){bd=d;best={q,k:'d'}}}
+  for(const q of CH.sg){const d=Math.abs(q.x-x);if(d<bd-8){bd=d;best={q,k:'s'}}}
+  const hl=$('#hl');if(!hl)return;
+  if(!best){hl.style.display='none';$('#cap').textContent=legend();return}
+  hl.style.display='';const L=$('#hlL'),C=$('#hlC');L.setAttribute('x1',best.q.x);L.setAttribute('x2',best.q.x);
+  if(best.k==='d'){const p=best.q.p,t=typ(p.type);C.setAttribute('cx',best.q.x);C.setAttribute('cy',best.q.y);C.style.display='';
+    $('#cap').textContent=`${fd(p.date)} · ${fn(p.val)} ${t.unite}${p.lab?' · '+p.lab:''}`}
+  else{const s=best.q.s;C.style.display='none';$('#cap').textContent=`${fd(s.date)} · ${KINDS[s.kind]}${s.vol?' · '+fn(s.vol)+' mL':''}`}
+}
+svg.addEventListener('pointerdown',pick);
+svg.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='mouse')pick(e)});
+const ro=new ResizeObserver(()=>draw());ro.observe(svg);
+
+/* ---------- Vue Suivi ---------- */
+function renderSuivi(){
+  if(!S.settings.types.some(t=>t.id===cur.type))cur.type=S.settings.types[0].id;
+  const t=typ(cur.type),T=today();
+  $('#types').innerHTML=S.settings.types.map(x=>`<button type="button" data-t="${esc(x.id)}" aria-pressed="${x.id===cur.type}">${esc(x.nom)}</button>`).join('');
+  $('#pers').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.p===cur.per)));
+  const ds=S.dosages.filter(d=>d.type===cur.type).sort(byDate),last=ds[ds.length-1],prev=ds[ds.length-2];
+  if(last){
+    const st=statut(last.val,t),dv=prev?last.val-prev.val:null;
+    const delta=dv==null?'':`<span>${dv<0?'↓':dv>0?'↑':'='} ${fn(Math.abs(dv))} ${esc(t.unite)} depuis le ${esc(fd(prev.date))}</span>`;
+    $('#hero').innerHTML=`<div><div class="meta">${esc(t.nom)} · ${esc(fd(last.date))} (${ago(days(last.date,T))})</div><span class="big">${fn(last.val)}</span> <span class="unit">${esc(t.unite)}</span></div><div class="hmeta">${delta}${st?`<span class="pill ${st[0]}">${st[1]}</span>`:''}</div>`;
+  }else $('#hero').innerHTML=`<div><div class="meta">${esc(t.nom)} · aucun dosage</div><span class="big">—</span> <span class="unit">${esc(t.unite)}</span></div>`;
+
+  const sgs=[...S.saignees].sort(byDate),ls=sgs[sgs.length-1];
+  const l12=sgs.filter(s=>s.date>addDays(T,-365)),vol=l12.reduce((a,s)=>a+(num(s.vol)||0),0);
+  const iv=sgs.slice(-7).map((s,i,a)=>i?days(a[i-1].date,s.date):null).filter(v=>v!=null);
+  const avg=iv.length?Math.round(iv.reduce((a,b)=>a+b,0)/iv.length):null;
+  let next='—',nextS='Aucune saignée enregistrée';
+  if(ls){const nd=addDays(ls.date,S.settings.intervalle),k=days(T,nd);next=k>0?`dans ${k} j`:k===0?"aujourd'hui":`en retard de ${-k} j`;nextS=fd(nd)}
+  const C=[
+    ['Dernière saignée',ls?ago(days(ls.date,T)):'—',ls?fd(ls.date):'—'],
+    ['Prochaine saignée',next,ls?`${nextS} · tous les ${S.settings.intervalle} j`:nextS],
+    ['Saignées sur 12 mois',String(l12.length),vol?(vol/1000).toLocaleString('fr-FR',{maximumFractionDigits:1})+' L prélevés':'—'],
+    ['Intervalle moyen',avg!=null?avg+' j':'—','sur les dernières saignées']];
+  $('#cards').innerHTML=C.map(c=>`<div class="card"><span>${c[0]}</span><b>${esc(c[1])}</b><span>${esc(c[2])}</span></div>`).join('');
+
+  $('#bk').innerHTML=backupDue()?`<div class="card bkc"><div><b>Pense à sauvegarder</b><span>${esc(backupLabel())}</span></div><button type="button" class="btn k" data-bk>Sauvegarder</button></div>`:'';
+
+  const hasDemo=S.dosages.some(d=>d.demo)||S.saignees.some(s=>s.demo);
+  $('#demo').innerHTML=!S.dosages.length&&!S.saignees.length
+    ?`<div class="empty">Aucune donnée pour l'instant. Ajoute un premier dosage ou une saignée.<button type="button" class="btn" data-demo="add">Voir avec des données d'exemple</button></div>`
+    :hasDemo?`<p class="note">Des données d'exemple sont affichées. <button type="button" class="lnk" data-demo="rm">Les retirer</button></p>`:'';
+  draw();
+}
+$('#types').addEventListener('click',e=>{const b=e.target.closest('button');if(b){cur.type=b.dataset.t;renderSuivi()}});
+$('#pers').addEventListener('click',e=>{const b=e.target.closest('button');if(b){cur.per=+b.dataset.p;renderSuivi()}});
+$('#demo').addEventListener('click',e=>{const b=e.target.closest('[data-demo]');if(!b)return;
+  if(b.dataset.demo==='add')addDemo();else{S.dosages=S.dosages.filter(d=>!d.demo);S.saignees=S.saignees.filter(s=>!s.demo);save();renderAll();toast('Exemples retirés')}});
+
+/* ---------- Vue Historique ---------- */
+function renderHisto(){
+  $('#hf').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===cur.hf)));
+  const it=[];
+  if(cur.hf!=='s')it.push(...S.dosages.map(o=>({k:'d',o})));
+  if(cur.hf!=='d')it.push(...S.saignees.map(o=>({k:'s',o})));
+  it.sort((a,b)=>b.o.date.localeCompare(a.o.date));
+  if(!it.length){$('#hlist').innerHTML='<li class="yr empty">Rien à afficher.</li>';return}
+  let y='',h='';
+  for(const{k,o}of it){
+    const yr=o.date.slice(0,4);if(yr!==y){y=yr;h+=`<li class="yr">${yr}</li>`}
+    if(k==='d'){const t=typ(o.type);
+      h+=`<li tabindex="0" data-k="d" data-id="${esc(o.id)}"><span class="ico" style="color:var(--acc2)">${TUBE}</span><div><div class="lt">${esc(t.nom)}</div><div class="ls">${esc([fd(o.date),o.lab,o.note].filter(Boolean).join(' · '))}</div></div><div class="lv">${fn(o.val)} <small>${esc(t.unite)}</small></div></li>`}
+    else h+=`<li tabindex="0" data-k="s" data-id="${esc(o.id)}"><span class="ico" style="color:var(--acc)">${DROP}</span><div><div class="lt">${esc(KINDS[o.kind])}</div><div class="ls">${esc([fd(o.date),o.lieu,o.hb!=null?'Hb '+fn(o.hb)+' g/dL':'',o.note].filter(Boolean).join(' · '))}</div></div><div class="lv">${o.vol!=null?fn(o.vol)+' <small>mL</small>':''}</div></li>`;
+  }
+  $('#hlist').innerHTML=h;
+}
+$('#hf').addEventListener('click',e=>{const b=e.target.closest('button');if(b){cur.hf=b.dataset.f;renderHisto()}});
+function openItem(li){if(!li||!li.dataset.id)return;const id=li.dataset.id;
+  if(li.dataset.k==='d')openDosage(S.dosages.find(d=>d.id===id));else openSaignee(S.saignees.find(s=>s.id===id))}
+$('#hlist').addEventListener('click',e=>openItem(e.target.closest('li[data-id]')));
+$('#hlist').addEventListener('keydown',e=>{if(e.key==='Enter')openItem(e.target.closest('li[data-id]'))});
+
+/* ---------- Formulaires ---------- */
+const dlg=$('#dlg'),frm=$('#frm');
+const opts=(arr)=>[...new Set(arr.filter(Boolean))].map(v=>`<option value="${esc(v)}"></option>`).join('');
+const acts=o=>`<div class="fa">${o?'<button type="button" class="btn d" data-del>Supprimer</button>':''}<button type="button" class="btn" data-x>Annuler</button><button class="btn p">Enregistrer</button></div>`;
+function openDosage(o){
+  const d=o||{date:today(),type:cur.type,val:'',lab:(S.dosages[S.dosages.length-1]||{}).lab||'',note:''};
+  frm.innerHTML=`<h3>${o?'Modifier le dosage':'Nouveau dosage'}</h3>
+  <div class="row"><label>Date<input type="date" name="date" required value="${esc(d.date)}"></label>
+  <label>Analyse<select name="type">${S.settings.types.map(t=>`<option value="${esc(t.id)}"${t.id===d.type?' selected':''}>${esc(t.nom)}</option>`).join('')}</select></label></div>
+  <label><span>Valeur (<span id="u">${esc(typ(d.type).unite)}</span>)</span><input name="val" inputmode="decimal" required value="${esc(d.val===''?'':fn(d.val).replace(/ |\s/g,''))}"></label>
+  <label>Laboratoire<input name="lab" list="labs" value="${esc(d.lab)}"></label><datalist id="labs">${opts(S.dosages.map(x=>x.lab))}</datalist>
+  <label>Note<textarea name="note">${esc(d.note)}</textarea></label>${acts(o)}`;
+  frm.elements.type.onchange=()=>{$('#u').textContent=typ(frm.elements.type.value).unite};
+  frm.onsubmit=e=>{e.preventDefault();const f=new FormData(frm),v=num(f.get('val'));
+    if(v==null){toast('Valeur invalide');frm.elements.val.focus();return}
+    if(!isDate(f.get('date'))){toast('Date invalide');return}
+    const n={id:o?o.id:uid(),date:f.get('date'),type:f.get('type'),val:v,lab:String(f.get('lab')).trim(),note:String(f.get('note')).trim()};
+    if(o)Object.assign(o,n),delete o.demo;else S.dosages.push(n);
+    cur.type=n.type;done('Dosage enregistré')};
+  bindActs(o,S.dosages,'dosages');dlg.showModal();if(!o)setTimeout(()=>frm.elements.val.focus(),60);
+}
+function openSaignee(o){
+  const d=o||{date:today(),kind:(S.saignees[S.saignees.length-1]||{}).kind||'efs',vol:S.settings.volume,lieu:(S.saignees[S.saignees.length-1]||{}).lieu||'',hb:null,note:''};
+  frm.innerHTML=`<h3>${o?'Modifier la saignée':'Nouvelle saignée'}</h3>
+  <div class="row"><label>Date<input type="date" name="date" required value="${esc(d.date)}"></label>
+  <label>Volume (mL)<input name="vol" inputmode="numeric" value="${esc(d.vol??'')}"></label></div>
+  <label>Nature<select name="kind">${Object.entries(KINDS).map(([k,v])=>`<option value="${k}"${k===d.kind?' selected':''}>${v}</option>`).join('')}</select></label>
+  <div class="row"><label>Lieu<input name="lieu" list="lieux" value="${esc(d.lieu)}"></label>
+  <label>Hb avant (g/dL)<input name="hb" inputmode="decimal" value="${esc(d.hb==null?'':String(d.hb).replace('.',','))}"></label></div>
+  <datalist id="lieux">${opts(S.saignees.map(x=>x.lieu))}</datalist>
+  <label>Note (tolérance, malaise…)<textarea name="note">${esc(d.note)}</textarea></label>${acts(o)}`;
+  frm.onsubmit=e=>{e.preventDefault();const f=new FormData(frm);
+    if(!isDate(f.get('date'))){toast('Date invalide');return}
+    const n={id:o?o.id:uid(),date:f.get('date'),kind:f.get('kind'),vol:num(f.get('vol')),lieu:String(f.get('lieu')).trim(),hb:num(f.get('hb')),note:String(f.get('note')).trim()};
+    if(o)Object.assign(o,n),delete o.demo;else S.saignees.push(n);
+    done('Saignée enregistrée')};
+  bindActs(o,S.saignees,'saignees');dlg.showModal();
+}
+function bindActs(o,arr,key){
+  frm.querySelector('[data-x]').onclick=()=>dlg.close();
+  const del=frm.querySelector('[data-del]');
+  if(del)del.onclick=()=>{if(!confirm('Supprimer cette entrée ?'))return;S[key]=S[key].filter(x=>x!==o);done('Entrée supprimée')};
+}
+function done(msg){save();dlg.close();renderSuivi();renderHisto();toast(msg)}
+dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
+$('#addD').onclick=()=>openDosage(null);
+$('#addS').onclick=()=>openSaignee(null);
+
+/* ---------- Réglages ---------- */
+function renderRegl(){
+  const one=S.settings.types.length===1;
+  $('#typs').innerHTML=S.settings.types.map((t,i)=>{const used=S.dosages.some(d=>d.type===t.id);
+    return `<div class="typ" data-i="${i}"><div class="row"><label>Nom<input data-f="nom" value="${esc(t.nom)}"></label><label>Unité<input data-f="unite" value="${esc(t.unite)}"></label></div>
+    <div class="row"><label>Cible basse<input data-f="bas" inputmode="decimal" placeholder="—" value="${esc(t.bas)}"></label><label>Cible haute<input data-f="haut" inputmode="decimal" placeholder="—" value="${esc(t.haut)}"></label></div>
+    ${used||one?'':`<button type="button" class="btn d" data-rm="${i}">Retirer cette analyse</button>`}</div>`}).join('');
+  $('#int').value=S.settings.intervalle;$('#vol').value=S.settings.volume;
+  $('#rappel').value=String(S.settings.rappel);if(!$('#rappel').value)$('#rappel').value='14';
+  $('#bkinfo').textContent=backupLabel()+(S.meta.lastBackup?` (${new Date(S.meta.lastBackup).toLocaleString('fr-FR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})})`:'');
+  $('#info').textContent=`${S.dosages.length} dosage${S.dosages.length>1?'s':''} et ${S.saignees.length} saignée${S.saignees.length>1?'s':''}, stockés uniquement sur cet appareil${persisted?' (stockage persistant accordé)':''}. Pense à exporter une sauvegarde de temps en temps.`;
+  const standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+  $('#install').textContent=standalone?'':"Pour l'installer sur l'iPhone : dans Safari, bouton Partager puis « Sur l'écran d'accueil ». Les données saisies dans Safari et dans l'appli installée sont séparées : installe-la avant de commencer la saisie.";
+}
+$('#typs').addEventListener('change',e=>{const inp=e.target,box=inp.closest('.typ');if(!box||!inp.dataset.f)return;
+  const t=S.settings.types[+box.dataset.i],f=inp.dataset.f;let v=inp.value.trim();
+  if(f==='nom'&&!v){inp.value=t.nom;return}
+  if((f==='bas'||f==='haut')&&v&&num(v)==null){toast('Nombre invalide');inp.value=t[f];return}
+  t[f]=v;save();renderSuivi()});
+$('#typs').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(!b)return;S.settings.types.splice(+b.dataset.rm,1);save();renderRegl();renderSuivi()});
+$('#addT').onclick=()=>{S.settings.types.push({id:uid(),nom:'Nouvelle analyse',unite:'',bas:'',haut:''});save();renderRegl();renderSuivi();
+  const ins=$('#typs').querySelectorAll('[data-f=nom]');const l=ins[ins.length-1];l.focus();l.select()};
+$('#int').onchange=e=>{const n=Math.round(num(e.target.value));if(n>0){S.settings.intervalle=n;save();renderSuivi()}else e.target.value=S.settings.intervalle};
+$('#vol').onchange=e=>{const n=Math.round(num(e.target.value));if(n>0){S.settings.volume=n;save()}else e.target.value=S.settings.volume};
+
+async function saveFile(name,type,text){
+  const file=new File([text],name,{type});
+  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return true}}
+  catch(e){if(e&&e.name==='AbortError')return false}
+  const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+  return true;
+}
+/* ---------- Sauvegarde ---------- */
+const realData=()=>S.dosages.some(d=>!d.demo)||S.saignees.some(s=>!s.demo);
+function backupLabel(){
+  const b=S.meta.lastBackup;if(!b)return'Aucune sauvegarde pour l\'instant.';
+  const k=days(iso(new Date(b)),today());
+  return`Dernière sauvegarde ${ago(k)}${S.meta.modif&&S.meta.modif>b?', des données ont changé depuis':''}.`;
+}
+function backupDue(){
+  const r=S.settings.rappel,b=S.meta.lastBackup;
+  if(!r||!realData())return false;
+  if(!b)return true;
+  return S.meta.modif>b&&days(iso(new Date(b)),today())>=r;
+}
+async function backup(){
+  const now=new Date(),stamp=today()+'_'+String(now.getHours()).padStart(2,'0')+'h'+String(now.getMinutes()).padStart(2,'0');
+  const data={app:'hemosuivi',version:1,exporte:now.toISOString(),dosages:S.dosages,saignees:S.saignees,settings:S.settings};
+  const ok=await saveFile(`Hemosuivi_sauvegarde_${stamp}.json`,'application/json',JSON.stringify(data,null,1));
+  if(!ok)return;
+  S.meta.lastBackup=now.toISOString();save(false);renderSuivi();renderRegl();toast('Sauvegarde envoyée');
+}
+$('#bk').addEventListener('click',e=>{if(e.target.closest('[data-bk]'))backup()});
+$('#rappel').onchange=e=>{S.settings.rappel=+e.target.value;save(false);renderSuivi()};
+$('#csv').onclick=()=>{
+  const q=v=>{v=String(v??'');return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v},dec=v=>v==null?'':String(v).replace('.',',');
+  const rows=[...S.dosages.map(d=>['dosage',d.date,typ(d.type).nom,dec(d.val),typ(d.type).unite,'',d.lab,'',d.note]),
+    ...S.saignees.map(s=>['saignee',s.date,KINDS[s.kind],'','',dec(s.vol),s.lieu,dec(s.hb),s.note])].sort((a,b)=>a[1].localeCompare(b[1]));
+  rows.unshift(['categorie','date','analyse_ou_nature','valeur','unite','volume_ml','labo_ou_lieu','hb_avant_g_dl','note']);
+  saveFile(`hemosuivi_${today()}.csv`,'text/csv','﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n'));
+};
+$('#json').onclick=()=>backup();
+$('#imp').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const o=JSON.parse(await f.text());if(!Array.isArray(o.dosages)||!Array.isArray(o.saignees))throw 0;
+    const n=normalize(o);
+    if(!confirm(`Remplacer les données actuelles par cette sauvegarde (${n.dosages.length} dosages, ${n.saignees.length} saignées) ?`))return;
+    S=n;S.meta.lastBackup=typeof o.exporte==='string'?o.exporte:null;S.meta.modif=S.meta.lastBackup;save(false);renderAll();toast('Sauvegarde restaurée')}
+  catch(_){toast("Ce fichier n'est pas une sauvegarde valide")}};
+$('#wipe').onclick=()=>{if(!confirm('Effacer définitivement tous les dosages et saignées de cet appareil ? Exporte une sauvegarde avant si besoin.'))return;
+  S.dosages=[];S.saignees=[];save();renderAll();toast('Données effacées')};
+$('#ics').onclick=()=>{
+  const ls=[...S.saignees].sort(byDate).pop(),date=ls?addDays(ls.date,S.settings.intervalle):today();
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  const txt=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Hemosuivi//FR','BEGIN:VEVENT','UID:'+uid()+'@hemosuivi','DTSTAMP:'+stamp,
+    'DTSTART;VALUE=DATE:'+date.replace(/-/g,''),'DTEND;VALUE=DATE:'+addDays(date,1).replace(/-/g,''),'SUMMARY:Saignée prévue',
+    'BEGIN:VALARM','TRIGGER:-P2D','ACTION:DISPLAY','DESCRIPTION:Saignée dans 2 jours','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  location.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(txt);
+};
+$('#pdf').onclick=()=>{
+  const T=today();let h=`<h1>Suivi hémochromatose</h1><p>Rapport généré le ${esc(fd(T))}</p>`;
+  for(const t of S.settings.types){const ds=S.dosages.filter(d=>d.type===t.id).sort(byDate);if(!ds.length)continue;
+    const c=chart(700,230,t.id,0,false),cible=(t.bas||t.haut)?` · cible ${esc(t.bas||'…')} – ${esc(t.haut||'…')} ${esc(t.unite)}`:'';
+    h+=`<h2>${esc(t.nom)} (${esc(t.unite)})${cible}</h2><svg viewBox="0 0 700 230">${c.svg}</svg>
+    <table><tr><th>Date</th><th>Valeur</th><th>Laboratoire</th><th>Note</th></tr>${ds.slice().reverse().map(d=>`<tr><td>${esc(fd(d.date))}</td><td>${fn(d.val)} ${esc(t.unite)}</td><td>${esc(d.lab)}</td><td>${esc(d.note)}</td></tr>`).join('')}</table>`}
+  const sg=[...S.saignees].sort(byDate).reverse();
+  if(sg.length)h+=`<h2>Saignées et dons (${sg.length})</h2><table><tr><th>Date</th><th>Nature</th><th>Volume</th><th>Lieu</th><th>Hb avant</th><th>Note</th></tr>${sg.map(s=>`<tr><td>${esc(fd(s.date))}</td><td>${esc(KINDS[s.kind])}</td><td>${s.vol!=null?fn(s.vol)+' mL':''}</td><td>${esc(s.lieu)}</td><td>${s.hb!=null?fn(s.hb)+' g/dL':''}</td><td>${esc(s.note)}</td></tr>`).join('')}</table>`;
+  $('#rapport').innerHTML=h;try{window.print()}catch(_){toast('Impression indisponible ici')}
+};
+
+/* ---------- Données d'exemple ---------- */
+function addDemo(){
+  const T=today(),st=addDays(T,-540),D=[],G=[],r=(a,b)=>a+Math.random()*(b-a),ok=d=>d<=T;
+  for(let i=0;i<=230;i+=9)G.push({id:uid(),date:addDays(st,i),kind:'ther',vol:400,lieu:'Hôpital',hb:+r(12.6,14.4).toFixed(1),note:'',demo:true});
+  for(let i=300;i<=540;i+=70)G.push({id:uid(),date:addDays(st,i),kind:'efs',vol:450,lieu:'Maison du don',hb:+r(13,14.5).toFixed(1),note:'',demo:true});
+  for(let i=0;i<=540;i+=30){const v=i<=240?1150-1060*(i/240)**.8+r(-30,30):70+((i-300+700)%70)/70*35+r(-8,8);const dt=addDays(st,i+2);if(ok(dt))D.push({id:uid(),date:dt,type:'ferr',val:Math.round(Math.max(35,v)),lab:'Labo du quartier',note:'',demo:true})}
+  for(let i=0;i<=540;i+=90){const dt=addDays(st,i+2);if(ok(dt))D.push({id:uid(),date:dt,type:'cst',val:Math.round(i<=240?82-46*(i/240):r(28,38)),lab:'Labo du quartier',note:'',demo:true})}
+  for(let i=0;i<=540;i+=60){const dt=addDays(st,i+2);if(ok(dt))D.push({id:uid(),date:dt,type:'hb',val:+r(12.8,14.6).toFixed(1),lab:'Labo du quartier',note:'',demo:true})}
+  S.dosages.push(...D);S.saignees.push(...G.filter(g=>ok(g.date)));cur.per=730;save();renderAll();toast("Données d'exemple ajoutées");
+}
+
+/* ---------- Navigation ---------- */
+const VUES={suivi:['v-suivi','Suivi'],historique:['v-histo','Historique'],reglages:['v-regl','Réglages']};
+function go(v){
+  if(!VUES[v])v='suivi';
+  for(const[k,[id]]of Object.entries(VUES))$('#'+id).hidden=k!==v;
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.v===v?'page':'false'));
+  $('#titre').textContent=VUES[v][1];
+  if(v==='reglages')renderRegl();if(v==='historique')renderHisto();if(v==='suivi')draw();
+  window.scrollTo(0,0);
+}
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;try{history.replaceState(null,'','#'+b.dataset.v)}catch(_){}go(b.dataset.v)});
+function renderAll(){renderSuivi();renderHisto();renderRegl()}
+
+load();renderAll();go(location.hash.slice(1));
+try{if(navigator.storage&&navigator.storage.persisted)navigator.storage.persisted().then(p=>p||navigator.storage.persist()).then(p=>{persisted=!!p;renderRegl()}).catch(()=>{})}catch(_){}
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
